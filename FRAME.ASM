@@ -11,12 +11,12 @@
 
 vid_seg		 	 = 0b800h	; video segment code
 
-left_bottom      = 0c8h	; <----------------------------------------|
-right_bottom   	 = 0bch	; 	    frame symbol codes
-left_top       	 = 0c9h	; 
-right_top 	 	 = 0bbh	; 
-side_pipe	 	 = 0cdh	; 
-stand_pipe	 	 = 0bah	; <----------------------------------------|
+left_bottom      = 0c8h		; <----------------------------------------|
+right_bottom   	 = 0bch		; 	    frame symbol codes
+left_top       	 = 0c9h		; 
+right_top 	 	 = 0bbh		; 
+side_pipe	 	 = 0cdh		; 
+stand_pipe	 	 = 0bah		; <----------------------------------------|
 
 x1		 		 = 10		;	  top left coordinates
 y1		 		 = 5		;
@@ -89,17 +89,14 @@ print_row:	mov es:[di], ax
 print_mid:  add di, (80d - (x2 - x1)) * 2
 
 			mov al, stand_pipe
-			mov ah, 01110011b
 			mov es:[di], ax
 			add di, 2
 
 			mov cx, x2 - x1 - 2
 			mov al, 32d
-			mov ah, 01110011b
 			call print_row
 
 			mov al, stand_pipe
-			mov ah, 01110011b
 			mov es:[di], ax
 			add di, 2
 			
@@ -107,14 +104,6 @@ print_mid:  add di, (80d - (x2 - x1)) * 2
 			cmp si, bx
 			jne  print_mid
 			
-			ret
-			
-			
-
-
-
-print_col:
-
-	
+			ret			
 
 end start
