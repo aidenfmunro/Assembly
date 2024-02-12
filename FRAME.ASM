@@ -40,9 +40,30 @@ start:		mov bx, vid_seg
 		mov ax, side_pipe
 		call print_row
 
-		
+		mov di, (y2 * 80 + x1) * 2		
 		mov cx, x2 - x1
 		call print_row
+
+		mov di, (y1 * 80 + x1) * 2
+		mov cx, 1
+		mov ax, left_top
+		call print_row
+
+		mov di, (y1 * 80 + x2) * 2
+		mov cx, 1
+		mov ax, right_top
+		call print_row
+
+		mov di, (y2 * 80 + x1) * 2
+		mov cx, 1
+		mov ax, left_bottom
+		call print_row
+
+		mov di, (y2 * 80 + x2) * 2
+		mov cx, 1
+		mov ax, right_bottom
+		call print_row
+ 
 
  																																
 		mov ax, 4c00h
@@ -51,5 +72,7 @@ start:		mov bx, vid_seg
 print_row:	stosw
 		loop print_row
 		ret
+
+print_col:	
 
 end start
