@@ -22,16 +22,18 @@ msg db 'Greetings!', 0
 ;
 ; [return]:  ax - string length
 ;
+; [assumes]: cdecl, df = 0
+;
 ;\----------------------------/
 
-my_strlen proc						; cdecl
+my_strlen proc						
 
 		push bp
 		mov bp, sp
 
 		mov di, [bp + 4]
 	
-		max_len equ 100h
+		max_len equ 100h		; max length equals 256d
 		mov cx, max_len			
 		xor al, al				; al = 0
 		
@@ -47,15 +49,18 @@ my_strlen proc						; cdecl
 
 ;/----------[memchr]----------\
 ;
-; [entry]: di - string address, cx - bytes count, al - symbol
+; [entry]: arg1 - bytes count, arg2 - symbol, arg3 - address
 ;
 ; [destroy]: ax, cx, di
 ;
 ; [return]: ax - byte address or 0 if not found
 ;
-;\----------[memchr]----------/
+; [assumes]: cdecl, df = 0
+;
+;\----------------------------/
 
-my_memchr proc						; cdecl
+my_memchr proc
+
 		push bp
 		mov bp, sp
 
@@ -70,11 +75,14 @@ my_memchr proc						; cdecl
 		xor ax, ax
 		jmp @@notfound
 
+		pop bp
 		ret
 
 @@found:
 		mov ax, di
 		dec ax
+
+		pop bp
 		ret 
 
 @@notfound:
@@ -85,15 +93,18 @@ my_memchr proc						; cdecl
 		
 ;/----------[memset]----------\
 ;
-; [entry]: di - address, cx - bytes count
+; [entry]: arg1 - bytes count, arg2 - symbol, arg3 - addres 
 ;
-; [destroy]:
+; [destroy]: di, al, cx
 ;
-; [return]: ?
+; [return]: ax - dest address
+;
+; [assumes]: cdecl, df = 0 
 ;
 ;\----------------------------/
 
-my_memset:
+my_memset proc 		
+
 		push bp
 		mov bp, sp
 
@@ -101,16 +112,26 @@ my_memset:
 		mov al, [bp + 6]		; which symbol
 		mov cx, [bp + 8]		; byte count
 
-		mov dx, di
+		mov dx, di				; copy address
 
+		rep stosb				; fill
 
-;/----------[memset]-----------\
+		mov ax, dx				; move result to ax
+
+		pop bp
+		ret
+
+		endp
+
+;/----------[memcpy]-----------\
 ;
-; [entry]: 
+; [entry]:  arg1 - address, arg2 - src address, arg3 - byte count
 ;
-; [destroy] cx, si, di, 
+; [destroy]: cx, si, di, 
 ;
 ; [return]: ax - dest address
+;
+; [assumes]: pascal, df = 0
 ;
 ;\-----------------------------/
 
@@ -130,13 +151,40 @@ my_memcpy	proc
 
 		rep movsw
 
+		pop bp
+		ret6
+
 @@end:
 		pop bp
 		ret 6
-my_memcpy	endp
 
+		endp
+
+;/----------[memcmp]----------\
+;
+; [entry]: arg1 - address of 1st str (es), arg2 - address of 2nd str (ds), arg3 - byte count
+;
+; [destroy]: 
+;
+; [return]:
+;
+; [assumes]: pascal, df = 0
+;
+;\----------------------------/
+
+my_memcmp proc
+
+		push bp
+		mov bp, sp
+
+		mov cx, [bp + 4]
+		mov di, [bp + 6]
+		mov si, [bp + 8]
+
+		endp
 main proc
-		cld
+		cld						; set df = 0
+
 		push offset msg
 		call my_strlen
 		add sp, 02h
@@ -145,4 +193,5 @@ main proc
 		
 
 main endp
+
 end 	start
