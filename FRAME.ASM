@@ -12,7 +12,7 @@
 vid_seg		 	 = 0b800h	; video segment code
 
 left_bottom      = 0c8h		; <----------------------------------------|
-right_bottom   	 = 0bch		; 	    frame symbol codes
+right_bottom   	 = 0bch		;  ¼É   frame symbol codes
 left_top       	 = 0c9h		; 
 right_top 	 	 = 0bbh		; 
 side_pipe	 	 = 0cdh		; 
@@ -24,7 +24,7 @@ y1		 		 = 5		;
 x2		 		 = 70		;	  bottom right coordinates
 y2		 		 = 10		;
 
-dos_width	 = 80
+dos_width	 	 = 80
 
 ;\---------------------------------------------------------------------/
 
