@@ -33,30 +33,46 @@ draw_frame  proc
             push bp
             mov bp, sp
 
-            mov si, [bp + 4]        ; address 
+            mov si, [bp + 4]        ; get the address of the cfg string 
 
             mov ax, .default_height ;
-            sub ax, [bp + 8]        ;
-            shr ax, 1               ; (default width - width) / 2
+            sub ax, [bp + 8]        ; get height
+            shr ax, 1               ; (default_height - height) / 2
 
             mov cx, .default_width  
-            mul cx                  ; y * default width
+            mul cx                  ; y * default_width
 
-            sub cx, [bp + 10]       ; 
-            shr cx, 1               ;
-            add ax, cx              ;
-            shl ax, 1
+            sub cx, [bp + 10]       ; get width
+            shr cx, 1               ; (default_width - width) / 2
+            add ax, cx              ; y * defaul_width * x
+            shl ax, 1               ; (y * default_width * x) * 2
 
             mov di, ax
 
-            xor al, al
-            mov ah, [bp + 6]        ; color
+            xor al, al              ; clean al to prevent +3 hrs debugging 
+            mov ah, [bp + 6]        ; get color
 
-            xor bh, bh            
-            mov bl, [bp + 8]        ; height
+            xor bh, bh              ; clean bh to prevent +3 hrs debugging
+            mov bl, [bp + 8]        ; get height
 
-            xor dh, dh
-            mov dl, [bp + 10]       ; width
+            xor dh, dh              ; clean bh to prevent +3 hrs debugging
+            mov dl, [bp + 10]       ; get width
+            sub dl, 2               ; - 2 corners
+
+
+            call draw_line
+
+            ; mov cx, bx
+            ; call draw_middle
+            
+
+            call draw_line
+
+            pop bp
+            ret
+            endp
+
+draw_line   proc
 
             lodsb
             stosw
@@ -68,10 +84,25 @@ draw_frame  proc
             lodsb
             stosw
 
-            pop bp
+            mov cx, -2d 
+            add cx, .default_width
+            sub cx, dx
+            shl cx, 1
+            
+            add di, cx
+            
             ret
             endp
 
+draw_middle proc
+            call draw_line
+
+            sub si, 3
+            loop draw_middle
+
+            add si, 3
+            ret
+            endp
 
 read_args   proc
 
