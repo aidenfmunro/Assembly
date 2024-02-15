@@ -23,6 +23,8 @@ start:
             .vram_init
 
             call read_args
+
+            call draw_frame
             
             .dos_exit
 
@@ -31,19 +33,30 @@ draw_frame  proc
             push bp
             mov bp, sp
 
-            mov ah, [bp + 6]        ; color
-
             mov si, [bp + 4]        ; address 
 
+            mov ax, .default_height ;
+            sub ax, [bp + 8]        ;
+            shr ax, 1               ; (default width - width) / 2
+
+            mov cx, .default_width  
+            mul cx                  ; y * default width
+
+            sub cx, [bp + 10]       ; 
+            shr cx, 1               ;
+            add ax, cx              ;
+            shl ax, 1
+
+            mov di, ax
+
+            xor al, al
+            mov ah, [bp + 6]        ; color
+
+            xor bh, bh            
             mov bl, [bp + 8]        ; height
 
+            xor dh, dh
             mov dl, [bp + 10]       ; width
-
-            xor di, di
-            add di, .default_width
-            add di, .default_width
-            ; sub di, dx
-            ; shr di, 1
 
             lodsb
             stosw
@@ -62,36 +75,31 @@ draw_frame  proc
 
 read_args   proc
 
-            push bp
-            mov bp, sp
+            pop bp
+            ; mov bp, sp
 
             mov si, 80h             ; args address
             lodsb                   ; al = len of args
             xor cx, cx              ; cx = 0
             mov cl, al              ; al = cl
 
-            add si, 1
+            add si, 1               ; skip space
             call read_num           
             push ax                 ; push width
 
-            add si, 1
+            add si, 1               ; skip space
             call read_num           
             push ax                 ; push height
 
-            add si, 1
+            add si, 1               ; skip space
             call read_num           
             push ax                 ; push color
 
-            push offset control_str ; push frame address
+            ; call read_cfg           
+            ; push ax                 ; push
+            push offset control_str
 
-            call draw_frame
-
-            pop ax
-            pop ax
-            pop ax
-            pop ax
-
-            pop bp
+            push bp
             ret
             endp
 
@@ -113,20 +121,22 @@ read_cfg  proc
             cmp al, '*'
             je @@new_cfg
 
+            xor ah, ah              ; clean up
             sub al, '0'
+
             mov bx, 9                                                   
             mul bl
             add ax, offset control_str
+
+            ret
             
 @@new_cfg:
-            push ax
+            ;push ax                 ; ?
             mov ax, si
-            add si, 9
-            pop ax            
+            ;add si, 9
+            ;pop ax            
 
-@@end:
             ret
-            endp
 
 
 
