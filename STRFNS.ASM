@@ -152,7 +152,7 @@ my_memcpy	proc
 		rep movsw
 
 		pop bp
-		ret6
+		ret 6
 
 @@end:
 		pop bp
@@ -178,8 +178,43 @@ my_memcmp proc
 		mov bp, sp
 
 		mov cx, [bp + 4]
-		mov di, [bp + 6]
-		mov si, [bp + 8]
+		mov si, [bp + 6]
+		mov di, [bp + 8]
+
+		cmp si, di				; si == di
+		je @@end
+		
+		test cx, cx				; cx == 0
+		je @@end
+
+		repe cmpsb
+
+
+		pop bp
+		ret 6
+
+@@end:
+		pop bp
+		ret 6
+
+		endp
+
+my_memmove proc
+		push bp
+		mov bp, sp
+
+		mov cx, [bp + 4]
+		mov si, [bp + 6]
+		mov di,
+
+		cmp di, si				; si == di
+		je @@end
+
+		
+@@end:
+		pop bp
+		ret 6
+
 
 		endp
 main proc
