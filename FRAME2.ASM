@@ -117,20 +117,20 @@ read_args   proc
             xor cx, cx              ; cx = 0
             mov cl, al              ; al = cl
 
-            add si, 1               ; skip space
+            inc si               ; skip space
             call read_num           
             push ax                 ; push width
 
-            add si, 1               ; skip space
+            inc si               ; skip space
             call read_num           
             push ax                 ; push height
 
-            add si, 1               ; skip space
+            inc si               ; skip space
             call read_num           
             push ax                 ; push color
 
-            add si, 1
-            call read_cfg           
+            inc si               ; skip space
+            call read_cfg           ; push read
             push ax
 
             push bp
@@ -155,12 +155,12 @@ read_cfg  proc
             cmp al, '*'
             je @@new_cfg
 
-            xor ah, ah              ; clean up
+            xor ah, ah              
             sub al, '0'
 
             mov bx, 9                                                   
             mul bl
-            mov  ax, offset control_str ; add !
+            add ax, offset control_str ; 
 
             ret
             
@@ -253,5 +253,6 @@ read_dig    proc
 
 
 control_str     db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch 
+                db 03h, 03h, 03h, 03h, 20h, 03h, 03h, 03h, 03h
 
 end start
