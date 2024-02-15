@@ -1,7 +1,7 @@
 .model tiny
 .code
 .286
-.org 100h
+org 100h
 
 locals @@
 
@@ -19,8 +19,6 @@ start:
             .vram_init
 
             call read_args
-            call draw_frame
-
             
             .dos_exit
 
@@ -32,32 +30,33 @@ control_str     db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch
 
 read_args   proc
 
-            pop bp
+            push bp
+            mov bp, sp
+
             mov si, 80h             ; args address
             lodsb                   ; al = len of args
             xor cx, cx              ; cx = 0
             mov cl, al              ; al = cl
 
-            call skip_spaces
-            call read_num
-            mov ah, al               
-            ; push ax                 
-            mov dx, ax
+            add si, 1
+            call read_num               
+            push ax                 
 
-            call skip_spaces
+            add si, 1
             call read_num
-            add dx, ax
-            xchg dx, ax
             push ax                 ; push ah - width, al - height
 
-            call skip_spaces
-            call read_num
-            push ax                 ; push al - attributes
+            ;call skip_spaces
+            ;call read_num
+            ;push ax                 ; push al - attributes
 
-            call skip_spaces
-            call read_param
-            push ax                 ; string address
-
+            ;call skip_spaces
+            ;call read_param
+            ;push ax                 ; string address
+            pop ax
+            pop ax
+            pop bp
+            ret
             endp
 
 ;/----------[read_params]----------\
@@ -84,8 +83,10 @@ read_param  proc
             add ax, offset control_str
             
 @@new_param:
+            push ax
             mov ax, si
-            add si, 9            
+            add si, 9
+            pop ax            
 
 @@end:
             ret
@@ -105,20 +106,20 @@ read_param  proc
 ;
 ;\---------------------------------/
 
-skip_spaces proc
-
-            push ax
-            jmp @@skip
-@@skip:
-            lodsb                  ; al = symbol
-            cmp al, ' '            
-            je  @@skip             ; find more spaces
-            dec si                 ; si has been incremented, but al != ' '
-
-            pop ax                  
-            ret
-
-            endp
+;skip_spaces proc
+;
+;            push ax
+;            jmp @@skip
+;@@skip:
+;            lodsb                  ; al = symbol
+;            cmp al, ' '            
+;            je  @@skip             ; find more spaces
+;            dec si                 ; si has been incremented, but al != ' '
+;
+;            pop ax                  
+;            ret
+;
+;            endp
 
 ;/----------[read_num]-------------\
 ;
@@ -138,11 +139,8 @@ read_num    proc
             xor ax, ax              ; ax = 0
 
             call read_dig
-
             mov bx, ax
-            shl bx, 3
-            shl ax, 1
-            add bx, ax            
+            shl bx, 4
 
             call read_dig
             add ax, bx
@@ -161,6 +159,7 @@ read_num    proc
 ; [assumes]: -
 ;
 ;\---------------------------------/
+
 read_dig    proc 
             lodsb
             sub al, '0'             ; 0 <= ... <= 9
@@ -168,7 +167,8 @@ read_dig    proc
             cmp al, 10d
             jb @@end
 
-            ret endp
+            sub al, -'0' + 'a' - 10
+            ret
 @@end:
             ret
             endp
