@@ -62,8 +62,8 @@ draw_frame  proc
 
             call draw_line
 
-            ; mov cx, bx
-            ; call draw_middle
+            
+            call draw_middle
             
 
             call draw_line
@@ -98,7 +98,10 @@ draw_middle proc
             call draw_line
 
             sub si, 3
-            loop draw_middle
+            dec bx
+            cmp bx, 0
+
+            jne draw_middle
 
             add si, 3
             ret
