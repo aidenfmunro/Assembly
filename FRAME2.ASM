@@ -62,7 +62,7 @@ draw_frame  proc
 
             call draw_line
 
-            
+
             call draw_middle
             
 
@@ -129,9 +129,9 @@ read_args   proc
             call read_num           
             push ax                 ; push color
 
-            ; call read_cfg           
-            ; push ax                 ; push
-            push offset control_str
+            add si, 1
+            call read_cfg           
+            push ax
 
             push bp
             ret
@@ -160,15 +160,12 @@ read_cfg  proc
 
             mov bx, 9                                                   
             mul bl
-            add ax, offset control_str
+            mov  ax, offset control_str ; add !
 
             ret
             
 @@new_cfg:
-            ;push ax                 ; ?
-            mov ax, si
-            ;add si, 9
-            ;pop ax            
+            mov ax, si            
 
             ret
 
