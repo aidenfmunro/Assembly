@@ -5,6 +5,10 @@ org 100h
 
 locals @@
 
+.default_width equ 80d
+
+.default_height equ 25d
+
 .dos_exit   macro
             mov ax, 4c00h
             int 21h
@@ -22,10 +26,38 @@ start:
             
             .dos_exit
 
+draw_frame  proc
 
-control_str     db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch 
-                db 0dah, 0c4h, 0bfh, 0b3h, 20h, 0b3h, 0c0h, 0c4h, 0d9h
+            push bp
+            mov bp, sp
 
+            mov ah, [bp + 6]        ; color
+
+            mov si, [bp + 4]        ; address 
+
+            mov bl, [bp + 8]        ; height
+
+            mov dl, [bp + 10]       ; width
+
+            xor di, di
+            add di, .default_width
+            add di, .default_width
+            ; sub di, dx
+            ; shr di, 1
+
+            lodsb
+            stosw
+
+            lodsb
+            mov cl, dl
+            rep stosw
+
+            lodsb
+            stosw
+
+            pop bp
+            ret
+            endp
 
 
 read_args   proc
@@ -39,22 +71,26 @@ read_args   proc
             mov cl, al              ; al = cl
 
             add si, 1
-            call read_num               
-            push ax                 
+            call read_num           
+            push ax                 ; push width
 
             add si, 1
-            call read_num
-            push ax                 ; push ah - width, al - height
+            call read_num           
+            push ax                 ; push height
 
-            ;call skip_spaces
-            ;call read_num
-            ;push ax                 ; push al - attributes
+            add si, 1
+            call read_num           
+            push ax                 ; push color
 
-            ;call skip_spaces
-            ;call read_param
-            ;push ax                 ; string address
+            push offset control_str ; push frame address
+
+            call draw_frame
+
             pop ax
             pop ax
+            pop ax
+            pop ax
+
             pop bp
             ret
             endp
@@ -71,18 +107,18 @@ read_args   proc
 ;
 ;\---------------------------------/
 
-read_param  proc
+read_cfg  proc
 
             lodsb
             cmp al, '*'
-            je @@new_param
+            je @@new_cfg
 
             sub al, '0'
             mov bx, 9                                                   
             mul bl
             add ax, offset control_str
             
-@@new_param:
+@@new_cfg:
             push ax
             mov ax, si
             add si, 9
@@ -94,7 +130,7 @@ read_param  proc
 
 
 
-;/----------[skip_spaces]----------\
+;/----------[skip_spaces]----------\ <-------------------------------/ RIP /
 ;
 ; [entry]: si
 ;
@@ -174,5 +210,7 @@ read_dig    proc
             endp
 
 
+
+control_str     db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch 
 
 end start
