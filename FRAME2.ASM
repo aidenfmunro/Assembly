@@ -5,19 +5,33 @@ org 100h
 
 locals @@
 
+;/---------[constants]----------\
 default_width equ 80d
 
 default_height equ 25d
 
-dos_exit   macro
-            mov ax, 4c00h
+end_symbol equ 0dh
+
+vram equ 0b800h
+
+exit_code equ 4c00h
+;\------------------------------/
+
+
+
+;/----------[macros]----------\
+dos_exit    macro
+            mov ax, exit_code
             int 21h
             endm
 
-vram_init  macro
-            mov bx, 0b800h          ; vram address
+vram_init   macro
+            mov bx, vram          ; vram address
             mov es, bx
             endm
+;\----------------------------/
+
+
 
 start:
             vram_init
@@ -25,6 +39,10 @@ start:
             call read_args
 
             call draw_frame
+
+            add sp, 8
+
+            call draw_text
             
             dos_exit
 
@@ -43,6 +61,43 @@ start:
 ;            -> [bp + 10]: width
 ;
 ;\---------------------------------/
+
+
+draw_text   proc
+
+            call skip_spaces
+
+            xor ax, ax
+            add ax, default_width * default_height
+            mov di, ax
+
+            call @@draw_symbol
+            jmp @@end
+
+@@draw_symbol:
+
+            lodsb
+            cmp al, end_symbol
+            je @@end
+            stosw
+
+            jmp @@draw_symbol
+@@end:
+            ret
+            endp
+
+;/----------[frame_init]---------\
+;
+; [entry]: -
+;
+; [destroy]: ax, bx, cx, dx, si, di 
+;
+; [return]: -
+;
+; [assumes]: -
+;
+;\-------------------------------/     
+
 
 frame_init  proc
 
@@ -76,7 +131,7 @@ frame_init  proc
 
             endp
 
-  ;/----------[draw_frame]---------\
+;/----------[draw_frame]---------\
 ;
 ; [entry]: -
 ;
@@ -86,7 +141,7 @@ frame_init  proc
 ;
 ; [assumes]: -
 ;
-;\---------------------------------/      
+;\-------------------------------/      
 
 draw_frame  proc
 
@@ -181,7 +236,7 @@ draw_middle proc
 
 read_args   proc
 
-            pop bp                 
+            pop bp                  ; push bp; mov bp, sp; pop bp
 
             mov si, 80h             ; args address
             lodsb                   ; al = len of args
@@ -324,7 +379,7 @@ read_dig    proc
 
 
 
-control_str     db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch 
-                db 03h, 03h, 03h, 03h, 20h, 03h, 03h, 03h, 03h
+control_str     db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch, 0dh
+                db 03h, 03h, 03h, 03h, 20h, 03h, 03h, 03h, 03h, 0dh
 
 end start
