@@ -5,41 +5,54 @@ org 100h
 
 locals @@
 
-.default_width equ 80d
+default_width equ 80d
 
-.default_height equ 25d
+default_height equ 25d
 
-.dos_exit   macro
+dos_exit   macro
             mov ax, 4c00h
             int 21h
             endm
 
-.vram_init  macro
+vram_init  macro
             mov bx, 0b800h          ; vram address
             mov es, bx
             endm
 
 start:
-            .vram_init
+            vram_init
 
             call read_args
 
             call draw_frame
             
-            .dos_exit
+            dos_exit
 
-draw_frame  proc
+;/----------[frame_init]-------------\
+;
+; [entry]: stack
+;
+; [destroy]: ax, bx, cx, dx, si 
+;
+; [return]: -
+;
+; [assumes]: stack frame:
+;            -> [bp + 4]: address of the cfg string
+;            -> [bp + 6]: color number
+;            -> [bp + 8]: height
+;            -> [bp + 10]: width
+;
+;\---------------------------------/
 
-            push bp
-            mov bp, sp
+frame_init  proc
 
             mov si, [bp + 4]        ; get the address of the cfg string 
 
-            mov ax, .default_height ;
+            mov ax, default_height  
             sub ax, [bp + 8]        ; get height
             shr ax, 1               ; (default_height - height) / 2
 
-            mov cx, .default_width  
+            mov cx, default_width  
             mul cx                  ; y * default_width
 
             sub cx, [bp + 10]       ; get width
@@ -59,18 +72,52 @@ draw_frame  proc
             mov dl, [bp + 10]       ; get width
             sub dl, 2               ; - 2 corners
 
+            ret
+
+            endp
+
+  ;/----------[draw_frame]---------\
+;
+; [entry]: -
+;
+; [destroy]: ax, bx, cx, dx, si, di 
+;
+; [return]: -
+;
+; [assumes]: -
+;
+;\---------------------------------/      
+
+draw_frame  proc
+
+            push bp
+            mov bp, sp
+
+            call frame_init
 
             call draw_line
-
 
             call draw_middle
             
-
             call draw_line
 
             pop bp
+
             ret
+
             endp
+
+;/----------[draw_line]-------------\
+;
+; [entry]: dl - width
+;
+; [destroy]: cx
+;
+; [return]: -
+;
+; [assumes]: di is set
+;
+;\----------------------------------/
 
 draw_line   proc
 
@@ -84,66 +131,91 @@ draw_line   proc
             lodsb
             stosw
 
-            mov cx, -2d 
-            add cx, .default_width
-            sub cx, dx
-            shl cx, 1
+            mov cx, -2d             ; -2 corners
+            add cx, default_width   ;  
+            sub cx, dx              ;
+            shl cx, 1               ; / 2
             
             add di, cx
             
             ret
             endp
 
+;/----------[draw_middle]-------------\
+;
+; [entry]: si, di, bx - height
+;
+; [destroy]: bx (will be 0)
+;
+; [return]: -
+;
+; [assumes]: si, di are set
+;
+;\------------------------------------/
+
 draw_middle proc
             call draw_line
 
-            sub si, 3
+            sub si, 3               ; get back to the middle 3 symbols
             dec bx
             cmp bx, 0
 
             jne draw_middle
-
-            add si, 3
+    
+            add si, 3               ; get back 
+            
             ret
             endp
 
+;/----------[read_args]------------\
+;
+; [entry]: -
+;
+; [destroy]: ax
+;
+; [return]: stack frame
+;
+; [assumes]: -
+;
+;\---------------------------------/
+
 read_args   proc
 
-            pop bp
-            ; mov bp, sp
+            pop bp                 
 
             mov si, 80h             ; args address
             lodsb                   ; al = len of args
             xor cx, cx              ; cx = 0
             mov cl, al              ; al = cl
 
-            inc si               ; skip space
+            call skip_spaces
             call read_num           
             push ax                 ; push width
 
-            inc si               ; skip space
+            call skip_spaces
             call read_num           
             push ax                 ; push height
 
-            inc si               ; skip space
+            call skip_spaces
             call read_num           
             push ax                 ; push color
 
-            inc si               ; skip space
+            call skip_spaces
             call read_cfg           ; push read
-            push ax
+            push ax                 
 
             push bp
+
             ret
             endp
 
-;/----------[read_params]----------\
+;/----------[read_cfg]----------\
 ;
 ; [entry]: si
 ;
-; [destroy]: -
+; [destroy]: ax, bx
 ;
-; [return]: si
+; [return]: cfg string address
 ;
 ; [assumes]: -
 ;
@@ -160,7 +232,7 @@ read_cfg  proc
 
             mov bx, 9                                                   
             mul bl
-            add ax, offset control_str ; 
+            add ax, offset control_str ; retrun  
 
             ret
             
@@ -171,7 +243,7 @@ read_cfg  proc
 
 
 
-;/----------[skip_spaces]----------\ <-------------------------------/ RIP /
+;/----------[skip_spaces]----------\ 
 ;
 ; [entry]: si
 ;
@@ -183,28 +255,28 @@ read_cfg  proc
 ;
 ;\---------------------------------/
 
-;skip_spaces proc
-;
-;            push ax
-;            jmp @@skip
-;@@skip:
-;            lodsb                  ; al = symbol
-;            cmp al, ' '            
-;            je  @@skip             ; find more spaces
-;            dec si                 ; si has been incremented, but al != ' '
-;
-;            pop ax                  
-;            ret
-;
-;            endp
+skip_spaces proc
+
+            push ax
+            jmp @@skip
+@@skip:
+            lodsb                  ; al = symbol
+            cmp al, ' '            
+            je  @@skip             ; find more spaces
+            dec si                 ; si has been incremented, but al != ' '
+
+            pop ax                  
+            ret
+
+            endp
 
 ;/----------[read_num]-------------\
 ;
 ; [entry]: -
 ;
-; [destroy]: -
+; [destroy]: ax, bx
 ;
-; [return]: -
+; [return]: number in ax
 ;
 ; [assumes]: -
 ;
@@ -227,13 +299,13 @@ read_num    proc
 
 ;/----------[read_dig]-------------\
 ;
-; [entry]: -
+; [entry]: 
 ;
-; [destroy]: -
+; [destroy]: ax
 ;
-; [return]: -
+; [return]: digit in al
 ;
-; [assumes]: -
+; [assumes]: di is set
 ;
 ;\---------------------------------/
 
@@ -244,7 +316,7 @@ read_dig    proc
             cmp al, 10d
             jb @@end
 
-            sub al, -'0' + 'a' - 10
+            sub al, -'0' + 'a' - 10 ; a ... f
             ret
 @@end:
             ret
