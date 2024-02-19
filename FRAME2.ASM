@@ -5,31 +5,28 @@ org 100h
 
 locals @@
 
-;/---------[constants]----------\
-default_width equ 80d
+WINDOW_WIDTH  equ 80d
 
-default_height equ 25d
+WINDOW_HEIGHT equ 25d                ; change the name to window_height
 
-end_symbol equ 0dh
+END_SYMBOL    equ 0dh
 
-vram equ 0b800h
+VRAM_ADDR     equ 0b800h
 
-exit_code equ 4c00h
-;\------------------------------/
+ARGS_ADDR     equ 80h 
 
+EXIT_CODE     equ 4c00h
 
-
-;/----------[macros]----------\
 dos_exit    macro
-            mov ax, exit_code
+            mov ax, EXIT_CODE
             int 21h
             endm
 
 vram_init   macro
-            mov bx, vram          ; vram address
+            mov bx, VRAM_ADDR
             mov es, bx
             endm
-;\----------------------------/
+
 
 
 
@@ -40,44 +37,25 @@ start:
 
             call draw_frame
 
-            add sp, 8
-
-            call draw_text
+            ; call draw_text
             
             dos_exit
 
-;/----------[frame_init]-------------\
-;
-; [entry]: stack
-;
-; [destroy]: ax, bx, cx, dx, si 
-;
-; [return]: -
-;
-; [assumes]: stack frame:
-;            -> [bp + 4]: address of the cfg string
-;            -> [bp + 6]: color number
-;            -> [bp + 8]: height
-;            -> [bp + 10]: width
-;
-;\---------------------------------/
 
 
 draw_text   proc
 
-            call skip_spaces
+            call skip_spaces                            ; TODO: more precise description
 
-            xor ax, ax
-            add ax, default_width * default_height
-            mov di, ax
+            mov di, WINDOW_WIDTH * WINDOW_HEIGHT        ; TODO: change to mov
 
-            call @@draw_symbol
+            call @@draw_symbol                          ; useless
             jmp @@end
 
 @@draw_symbol:
 
             lodsb
-            cmp al, end_symbol
+            cmp al, END_SYMBOL                          ; calculate the len of the tex for further exploit
             je @@end
             stosw
 
@@ -86,69 +64,45 @@ draw_text   proc
             ret
             endp
 
-;/----------[frame_init]---------\
-;
-; [entry]: -
-;
-; [destroy]: ax, bx, cx, dx, si, di 
-;
-; [return]: -
-;
-; [assumes]: -
-;
-;\-------------------------------/     
+   
 
 
 frame_init  proc
 
-            mov si, [bp + 4]        ; get the address of the cfg string 
+            mov si, frame_address        ; get the address of the cfg string 
 
-            mov ax, default_height  
-            sub ax, [bp + 8]        ; get height
-            shr ax, 1               ; (default_height - height) / 2
+            mov ax, WINDOW_HEIGHT  
+            sub ax, frame_height        ; get height
 
-            mov cx, default_width  
-            mul cx                  ; y * default_width
+            shr ax, 1               ; (WINDOW_HEIGHT - height) / 2
 
-            sub cx, [bp + 10]       ; get width
-            shr cx, 1               ; (default_width - width) / 2
-            add ax, cx              ; y * defaul_width * x
-            shl ax, 1               ; (y * default_width * x) * 2
+            mov cx, WINDOW_WIDTH  
+            mul cx                  ; y * WINDOW_WIDTH
+
+            sub cx, frame_width       ; get width
+            shr cx, 1               ; (WINDOW_WIDTH - width) / 2
+            add ax, cx              ; y * defaul_width + x
+            shl ax, 1               ; (y * WINDOW_WIDTH + x) * 2; 2 byte slot
 
             mov di, ax
 
             xor al, al              ; clean al to prevent +3 hrs debugging 
-            mov ah, [bp + 6]        ; get color
+            mov ah, frame_color     ; get color
 
-            xor bh, bh              ; clean bh to prevent +3 hrs debugging
-            mov bl, [bp + 8]        ; get height
+            mov bx, frame_height    ; get height
 
-            xor dh, dh              ; clean bh to prevent +3 hrs debugging
-            mov dl, [bp + 10]       ; get width
-            sub dl, 2               ; - 2 corners
+            mov dx, frame_width     ; get width
+            sub dx, 2               ; - 2 corners
 
             ret
 
             endp
 
-;/----------[draw_frame]---------\
-;
-; [entry]: -
-;
-; [destroy]: ax, bx, cx, dx, si, di 
-;
-; [return]: -
-;
-; [assumes]: -
-;
-;\-------------------------------/      
+
 
 draw_frame  proc
 
-            push bp
-            mov bp, sp
-
-            call frame_init
+            call frame_init                 ; TODO: fix stack frame
 
             call draw_line
 
@@ -156,23 +110,10 @@ draw_frame  proc
             
             call draw_line
 
-            pop bp
-
             ret
 
             endp
 
-;/----------[draw_line]-------------\
-;
-; [entry]: dl - width
-;
-; [destroy]: cx
-;
-; [return]: -
-;
-; [assumes]: di is set
-;
-;\----------------------------------/
 
 draw_line   proc
 
@@ -186,8 +127,8 @@ draw_line   proc
             lodsb
             stosw
 
-            mov cx, -2d             ; -2 corners
-            add cx, default_width   ;  
+            mov cx, -2d             ; -2 corners        ; TODO: maybe remove this (do it above) use only 1 register
+            add cx, WINDOW_WIDTH   ;  
             sub cx, dx              ;
             shl cx, 1               ; / 2
             
@@ -196,17 +137,7 @@ draw_line   proc
             ret
             endp
 
-;/----------[draw_middle]-------------\
-;
-; [entry]: si, di, bx - height
-;
-; [destroy]: bx (will be 0)
-;
-; [return]: -
-;
-; [assumes]: si, di are set
-;
-;\------------------------------------/
+
 
 draw_middle proc
             call draw_line
@@ -222,59 +153,36 @@ draw_middle proc
             ret
             endp
 
-;/----------[read_args]------------\
-;
-; [entry]: -
-;
-; [destroy]: ax
-;
-; [return]: stack frame
-;
-; [assumes]: -
-;
-;\---------------------------------/
+
 
 read_args   proc
 
-            pop bp                  ; push bp; mov bp, sp; pop bp
-
-            mov si, 80h             ; args address
+            mov si, ARGS_ADDR             ; args address
             lodsb                   ; al = len of args
             xor cx, cx              ; cx = 0
-            mov cl, al              ; al = cl
+            mov args_len, ax              ; al = cl
 
             call skip_spaces
             call read_num           
-            push ax                 ; push width
+            mov frame_width, ax                 ; push width
 
             call skip_spaces
             call read_num           
-            push ax                 ; push height
+            mov frame_height, ax                 ; push height
 
             call skip_spaces
             call read_num           
-            push ax                 ; push color
+            mov frame_color, al                ; push color
 
-            call skip_spaces
-            call read_cfg           ; push read
-            push ax                 
-
-            push bp
+            call skip_spaces                            ; TODO !!! VARIABLES !!!!!!!!
+            call read_cfg                      ; push read
+            mov frame_address, ax                 
 
             ret
+
             endp
 
-;/----------[read_cfg]----------\
-;
-; [entry]: si
-;
-; [destroy]: ax, bx
-;
-; [return]: cfg string address
-;
-; [assumes]: -
-;
-;\---------------------------------/
+
 
 read_cfg  proc
 
@@ -298,17 +206,6 @@ read_cfg  proc
 
 
 
-;/----------[skip_spaces]----------\ 
-;
-; [entry]: si
-;
-; [destroy]: -
-;
-; [return]: si
-;
-; [assumes]: -
-;
-;\---------------------------------/
 
 skip_spaces proc
 
@@ -325,17 +222,7 @@ skip_spaces proc
 
             endp
 
-;/----------[read_num]-------------\
-;
-; [entry]: -
-;
-; [destroy]: ax, bx
-;
-; [return]: number in ax
-;
-; [assumes]: -
-;
-;\---------------------------------/
+
 
 read_num    proc
 
@@ -346,23 +233,13 @@ read_num    proc
             mov bx, ax
             shl bx, 4
 
-            call read_dig
+            call read_dig           ; TODO: What if it's 1 <= ... <= 9 read 1 digit
             add ax, bx
 
             ret
             endp
 
-;/----------[read_dig]-------------\
-;
-; [entry]: 
-;
-; [destroy]: ax
-;
-; [return]: digit in al
-;
-; [assumes]: di is set
-;
-;\---------------------------------/
+
 
 read_dig    proc 
             lodsb
@@ -379,7 +256,21 @@ read_dig    proc
 
 
 
-control_str     db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch, 0dh
-                db 03h, 03h, 03h, 03h, 20h, 03h, 03h, 03h, 03h, 0dh
+control_str     db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch ; fix text
+                db 03h, 03h, 03h, 03h, 20h, 03h, 03h, 03h, 03h         ; TODO: ASCII symbols
+
+
+
+
+
+args_len      dw 0
+
+frame_height  dw 0
+
+frame_width   dw 0
+
+frame_color   db 0
+
+frame_address dw 0
 
 end start
