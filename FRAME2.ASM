@@ -17,6 +17,8 @@ ARGS_ADDR     equ 80h
 
 EXIT_CODE     equ 4c00h
 
+CFG_LEN       equ 9d
+
 dos_exit    macro
             mov ax, EXIT_CODE
             int 21h
@@ -43,29 +45,45 @@ start:
 
 
 
-draw_text   proc
+read_args   proc
 
-            call skip_spaces                            ; TODO: more precise description
+            mov si, ARGS_ADDR             ; args address
+            lodsb                         ; al = len of args
+            mov args_len, ax              
 
-            mov di, WINDOW_WIDTH * WINDOW_HEIGHT        ; TODO: change to mov
+            call skip_spaces
+            call read_num           
+            mov frame_width, ax               
 
-            call @@draw_symbol                          ; useless
-            jmp @@end
+            call skip_spaces
+            call read_num           
+            mov frame_height, ax                 
 
-@@draw_symbol:
+            call skip_spaces
+            call read_num           
+            mov frame_color, al                
 
-            lodsb
-            cmp al, END_SYMBOL                          ; calculate the len of the tex for further exploit
-            je @@end
-            stosw
+            call skip_spaces               ; TODO !!! VARIABLES !!!!!!!!
+            call read_cfg                      
+            mov frame_address, ax                 
 
-            jmp @@draw_symbol
-@@end:
             ret
+
             endp
 
-   
+draw_frame  proc
 
+            call frame_init                 
+
+            call draw_line
+
+            call draw_middle
+            
+            call draw_line
+
+            ret
+
+            endp
 
 frame_init  proc
 
@@ -98,23 +116,6 @@ frame_init  proc
 
             endp
 
-
-
-draw_frame  proc
-
-            call frame_init                 ; TODO: fix stack frame
-
-            call draw_line
-
-            call draw_middle
-            
-            call draw_line
-
-            ret
-
-            endp
-
-
 draw_line   proc
 
             lodsb
@@ -128,7 +129,7 @@ draw_line   proc
             stosw
 
             mov cx, -2d             ; -2 corners        ; TODO: maybe remove this (do it above) use only 1 register
-            add cx, WINDOW_WIDTH   ;  
+            add cx, WINDOW_WIDTH    ;  
             sub cx, dx              ;
             shl cx, 1               ; / 2
             
@@ -154,36 +155,6 @@ draw_middle proc
             endp
 
 
-
-read_args   proc
-
-            mov si, ARGS_ADDR             ; args address
-            lodsb                   ; al = len of args
-            xor cx, cx              ; cx = 0
-            mov args_len, ax              ; al = cl
-
-            call skip_spaces
-            call read_num           
-            mov frame_width, ax                 ; push width
-
-            call skip_spaces
-            call read_num           
-            mov frame_height, ax                 ; push height
-
-            call skip_spaces
-            call read_num           
-            mov frame_color, al                ; push color
-
-            call skip_spaces                            ; TODO !!! VARIABLES !!!!!!!!
-            call read_cfg                      ; push read
-            mov frame_address, ax                 
-
-            ret
-
-            endp
-
-
-
 read_cfg  proc
 
             lodsb
@@ -193,7 +164,7 @@ read_cfg  proc
             xor ah, ah              
             sub al, '0'
 
-            mov bx, 9                                                   
+            mov bx, CFG_LEN                                                 
             mul bl
             add ax, offset control_str ; retrun  
 
@@ -209,15 +180,11 @@ read_cfg  proc
 
 skip_spaces proc
 
-            push ax
-            jmp @@skip
-@@skip:
-            lodsb                  ; al = symbol
+            lodsb                   ; al = symbol
             cmp al, ' '            
-            je  @@skip             ; find more spaces
-            dec si                 ; si has been incremented, but al != ' '
+            je skip_spaces          ; find more spaces
+            dec si                  ; si has been incremented, but al != ' '
 
-            pop ax                  
             ret
 
             endp
@@ -249,19 +216,31 @@ read_dig    proc
             jb @@end
 
             sub al, -'0' + 'a' - 10 ; a ... f
-            ret
 @@end:
             ret
             endp
 
 
+draw_text   proc
+
+            call skip_spaces                            ; TODO: more precise description
+
+            mov di, WINDOW_WIDTH * WINDOW_HEIGHT        ; TODO: change to mov
+
+@@draw_symbol:
+
+            lodsb
+            cmp al, END_SYMBOL                          ; calculate the len of the tex for further exploit
+            je @@end
+            stosw
+
+            jmp @@draw_symbol
+@@end:
+            ret
+            endp
 
 control_str     db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch ; fix text
                 db 03h, 03h, 03h, 03h, 20h, 03h, 03h, 03h, 03h         ; TODO: ASCII symbols
-
-
-
-
 
 args_len      dw 0
 
