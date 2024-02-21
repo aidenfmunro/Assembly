@@ -48,7 +48,7 @@ start:      VRAM_INIT
 
             call draw_frame
 
-            ; call draw_text
+            call draw_text
             
             DOS_EXIT
 
@@ -92,8 +92,8 @@ read_args   proc
 
             call skip_spaces        
             call read_cfg                      
-            mov frame_address, ax                 
-
+            mov frame_address, ax
+              
             ret
 
             endp
@@ -196,12 +196,18 @@ read_cfg    proc
 
             mov bx, CFG_LEN                                                 
             mul bl
-            add ax, offset control_str 
+            add ax, offset control_str
+
+            add si, 1
+            mov text_address, si 
 
             ret
             
 @@new_cfg:
-            mov ax, si            
+            mov ax, si  
+
+            add si, 9                   ;  *123456789 -> shift 9 symbols to right
+            mov text_address, si           
 
             ret
 
@@ -342,18 +348,26 @@ draw_middle proc
 
 draw_text   proc
 
+            mov si, [text_address]
+
             call skip_spaces                            ; TODO: more precise description
 
             mov di, WINDOW_WIDTH * WINDOW_HEIGHT        ; TODO: change to mov
 
+            mov cx, 80h
+            add cx, [args_len]
+            sub cx, si
+            add cx, 1
+
+            cmp cx, WINDOW_WIDTH * WINDOW_HEIGHT
+            ja @@end
+
 @@draw_symbol:
 
-            lodsb
-            cmp al, END_SYMBOL                          ; calculate the len of the tex for further exploit
-            je @@end
+            lodsb                                      ; calculate the len of the tex for further exploit
             stosw
+            loop @@draw_symbol
 
-            jmp @@draw_symbol
 @@end:
             ret
             endp
@@ -373,6 +387,8 @@ frame_width   dw 0
 frame_color   db 0
 
 frame_address dw 0
+
+text_address  dw 0
 ;-----End of variables-------------------------------------------------------------------------
 
 end start
