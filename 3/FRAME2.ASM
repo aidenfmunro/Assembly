@@ -318,7 +318,7 @@ draw_line   proc
 ;-----End of procedure----------------------------------------------------------
 
 
-;-----Draw_middle procedure------------------------------------------------------
+;-----Draw_middle procedure-----------------------------------------------------
 ; 
 ;     brief: Draws the middle section of the frame.
 ;    
@@ -344,26 +344,44 @@ draw_middle proc
             ret
 
             endp
-;-------------------------------------------------------------------------------
+;-----End of draw_middle procedure----------------------------------------------
 
+;-----Draw_text procedure-------------------------------------------------------
+; 
+;     brief: Draws centred text.
+;    
+;     entry: si, di, ax, cx
+;
+;     destroys: si, di, ax, cx
+;
+;     return: incremented di, si, text.
+;
+;-------------------------------------------------------------------------------
 draw_text   proc
 
             mov si, [text_address]
 
             call skip_spaces                            ; TODO: more precise description
 
-            mov di, WINDOW_WIDTH * WINDOW_HEIGHT        ; TODO: change to mov
-
             mov cx, 80h
             add cx, [args_len]
             sub cx, si
             add cx, 1
 
+            mov di, WINDOW_WIDTH * WINDOW_HEIGHT
+
+            mov ax, cx
+            shr ax, 1
+            shl ax, 1
+
+            sub di, ax
+
+            mov ah, frame_color
             cmp cx, WINDOW_WIDTH * WINDOW_HEIGHT
             ja @@end
 
 @@draw_symbol:
-
+    
             lodsb                                      ; calculate the len of the tex for further exploit
             stosw
             loop @@draw_symbol
