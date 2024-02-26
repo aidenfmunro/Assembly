@@ -8,18 +8,18 @@ locals @@
 start:		push 0
 			pop es
 
-			mov bx, 4 * 09h ; IRQ1 interrupt vector address
+			mov bx, 4 * 09h 				  ; IRQ1 interrupt vector address
 
-			cli
-			mov es:[bx], offset IntOverride09 ; addr offset
+			cli								  ; criss cross
+			mov es:[bx], offset IntOverride09 ; addr offset 2 byte offset - 2 byte segment
 			push cs
-			pop ax
-			mov es:[bx + 2], ax ; addr segment
+			pop ax							  ; делается вручную
+			mov es:[bx + 2], ax 			  ; addr segment
 			sti
 
 			mov dx, offset EndOfProg
 			shr dx, 4
-			inc dx 		; sizeof(prog) / 16 + 1
+			inc dx 							  ; sizeof(prog) / 16 + 1
 			mov ax, 3100h
 			int 21h
 
@@ -30,17 +30,17 @@ IntOverride09	proc
 				pop es
 
 				mov bx, ((80 * 3) + 40) * 2
-				mov ah, 4eh ; color
+				mov ah, 4eh 				  ; color
 
-				in al, 60h ; symbol
+				in al, 60h 					  ; symbol
 				mov es:[bx], ax
 
-				; blink port 61h higher bit
+										      ; blink port 61h higher bit
 				in al, 61h
-				; mov ah, al ; thelp variant
+											  ; mov ah, al ; thelp variant
 				or al, 80h
 				out 61h, al
-				and al, not 80h ; ded variant
+				and al, not 80h 			  ; ded variant
 				out 61h, al
 
 				mov al, 20h

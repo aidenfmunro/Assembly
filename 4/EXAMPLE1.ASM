@@ -8,7 +8,7 @@ locals @@
 Start:		push 0
 			pop es
 
-			mov ax, 3509h
+			mov ax, 3509h ;
 			int 21h		; get int vector addr: es:bx
 
 			mov Old09Offs, bx
@@ -47,7 +47,7 @@ IntOverride09	proc
 
 				pop es bx ax
 
-				db 0eah ; far jmp
+				db 0eah ; far jmp								; TODO: why can't jmp otherwise?
 				Old09Offs	dw 0
 				Old09Seg	dw 0
 

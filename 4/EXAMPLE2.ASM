@@ -9,23 +9,23 @@ start:		push 0
 			pop es
 
 			mov ax, 3509h
-			int 21h		; get int vector addr: es:bx
+			int 21h					; get int vector addr: es:bx
 
 			mov Old09Offs, bx
 			mov bx, es
 			mov Old09Seg, bx
 
-			push ds ; save ds
+			push ds 				; save ds
 			mov dx, offset IntOverride09
 			push cs
 			pop ds
 			mov ax, 2509h
-			int 21h		; set int vector addr: ds: dx
-			pop ds ; restore ds
+			int 21h					; set int vector addr: ds: dx
+			pop ds 					; restore ds
 
 			mov dx, offset EndOfProg
 			shr dx, 4
-			inc dx 		; sizeof(prog) / 16 + 1
+			inc dx 					; sizeof(prog) / 16 + 1
 			mov ax, 3100h
 			int 21h
 

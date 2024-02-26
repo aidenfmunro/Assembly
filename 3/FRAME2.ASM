@@ -377,12 +377,12 @@ draw_text   proc
             sub di, ax
 
             mov ah, frame_color
-            cmp cx, WINDOW_WIDTH * WINDOW_HEIGHT
+            cmp cx, (WINDOW_WIDTH - 2) * (WINDOW_HEIGHT - 2)
             ja @@end
 
 @@draw_symbol:
     
-            lodsb                                      ; calculate the len of the tex for further exploit
+            lodsb                                      
             stosw
             loop @@draw_symbol
 
