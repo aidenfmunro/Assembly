@@ -27,7 +27,7 @@ EXIT_CODE     equ 4c00h
 
 ENTRY_SYM     equ 02h               ; '1'
 
-FRAME_HEIGHT  equ 14d
+FRAME_HEIGHT  equ 12d
 
 FRAME_WIDTH   equ 13d
 
@@ -175,6 +175,17 @@ draw_middle proc
             endp
 ;-----End of draw_middle procedure----------------------------------------------
 
+;-----Draw_regs procedure-------------------------------------------------------
+; 
+;     brief: Draws the middle section of the frame.
+;    
+;     entry: si, di, ax, cx, bx
+;
+;     destroys: si, di, ax, cx, bx
+;
+;     return: incremented di, si, middle section of the frame.
+;
+;-------------------------------------------------------------------------------
 draw_regs   proc
 
             mov si, offset regs_names
@@ -237,11 +248,10 @@ next:
 
             loop next
 
-                         ; cs not able to be written 
-
             ret 
 
             endp
+;-----End of draw_regs procedure------------------------------------------------
 
 main:       mov ax, 3509h               
 			int 21h		                ; get interrupt vector address -> es:bx
@@ -270,18 +280,26 @@ my_int09	proc
 
             push ax                     ; save ax
 
-			in al, 60h                  ; symbol
-
+            in al, 60h
             cmp al, ENTRY_SYM           ; '1'
 
             jne @@end
-            
-            ;cmp cs:pop_up, 0
-            
-            ;jne @@end
-            
-            ;mov cs:pop_up, 1
 
+			in al, 61h                  ; symbol
+            or al, 80h                  ; make higher bit 1
+            out 61h, al
+
+            and al, not 80h
+            out 61h, al
+
+;-----EOI------------------------------------------------------------------------
+
+            mov al, 20h			        ; say to PPI that our interrupt is over
+		    out 20h, al		            ; so other interrupts can play
+
+;-----End of processing the interrupt-------------------------------------------
+            
+;-----
 			push cs ds ss es sp bp di si dx cx bx ax
 
             call draw_frame
@@ -290,7 +308,11 @@ my_int09	proc
 
             pop ax bx cx dx si di bp sp es ss ds 
 
-            add sp, 2 ; <------------------------------------------ !!!
+            add sp, 2 ; <-------------------------------------------------------
+
+            pop ax
+
+            iret        
 
 @@end:      pop ax
 
