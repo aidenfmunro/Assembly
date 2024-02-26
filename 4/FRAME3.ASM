@@ -90,7 +90,10 @@ frame_init  proc
 
             VRAM_INIT
 
-            mov si, cs:frame_address           ; get the address of the cfg string 
+            push cs
+            pop ds
+
+            mov si, offset control_str      ; get the address of the cfg string 
 
             mov di, 0
 
@@ -195,27 +198,13 @@ main:       mov ax, 3509h
 			int 21h                     ;  terminate and stay resident
 
 
-draw_symbol proc
-
-            VRAM_INIT
-
-            mov bx, 0
-
-            mov es:[bx], ax
-
-            ret
-
-            endp
-        
-
-
 my_int09	proc
 
-            push ax
+            push ax                     ; save ax
 
-			in al, 60h ; symbol
+			in al, 60h                  ; symbol
 
-            cmp al, ENTRY_SYM
+            cmp al, ENTRY_SYM           ; '1'
 
             jne @@end
             
@@ -239,17 +228,13 @@ Old09Seg	dw 0
 
 			endp
 
-
-;-----Default configuration string----------------------------------------------
-control_str     db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch ; TODO: ASCII symbols         
-;-----End of default configuration string
-
 ;-----Variables-----------------------------------------------------------------
 pop_up        db 0
-
-frame_address dw offset control_str
-
 ;-----End of variables----------------------------------------------------------
+
+;-----Default configuration string----------------------------------------------
+control_str   db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch ; TODO: ASCII symbols         
+;-----End of default configuration string
 
 end_of_prog:
 end start
