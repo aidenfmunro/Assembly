@@ -31,7 +31,7 @@ FRAME_HEIGHT  equ 12d
 
 FRAME_WIDTH   equ 13d
 
-FRAME_COLOR   equ 05h
+FRAME_COLOR   equ 06h
 ;-----End of constants----------------------------------------------------------
 
 ;-----Macros--------------------------------------------------------------------
@@ -253,7 +253,7 @@ next:
             endp
 ;-----End of draw_regs procedure------------------------------------------------
 
-main:       mov ax, 3509h               
+main:       mov ax, 3509h                                                           
 			int 21h		                ; get interrupt vector address -> es:bx
 
 			mov Old09Offs, bx
@@ -265,6 +265,21 @@ main:       mov ax, 3509h
 			pop ds
 			mov dx, offset my_int09
 			mov ax, 2509h
+			int 21h		                ; set interrupt vector address -> ds:dx
+			pop ds                      ; restore ds
+
+            mov ax, 3508h               
+			int 21h		                ; get interrupt vector address -> es:bx
+
+			mov Old08Offs, bx
+			mov bx, es
+			mov Old08Seg, bx
+
+			push ds                     ; save ds
+			push cs
+			pop ds
+			mov dx, offset my_int08
+			mov ax, 2508h
 			int 21h		                ; set interrupt vector address -> ds:dx
 			pop ds                      ; restore ds
 
@@ -284,6 +299,8 @@ my_int09	proc
             cmp al, ENTRY_SYM           ; '1'
 
             jne @@end
+
+            mov cs:pop_up, 1
 
 			in al, 61h                  ; symbol
             or al, 80h                  ; make higher bit 1
@@ -322,6 +339,39 @@ Old09Seg	dw 0
 
 			endp
 
+my_int08    proc
+
+            push ax
+
+            cmp cs:pop_up, 0
+            je @@end
+
+            mov al, 20h			; say to PPI that our interrupt is over
+		    out 20h, al
+
+			push cs ds ss es sp bp di si dx cx bx ax
+
+            call draw_frame
+
+            call draw_regs
+
+            pop ax bx cx dx si di bp sp es ss ds 
+
+            add sp, 2 ; <-------------------------------------------------------
+
+            pop ax
+
+            iret        
+
+@@end:      pop ax
+
+            db 0eah                     ; far jmp ; TODO: why can't jmp otherwise?
+Old08Offs	dw 0
+Old08Seg	dw 0
+
+			endp
+
+
 ;-----Variables-----------------------------------------------------------------
 pop_up        db 0
 ;-----End of variables----------------------------------------------------------
@@ -329,7 +379,6 @@ pop_up        db 0
 ;-----Default configuration string----------------------------------------------
 control_str   db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch ; TODO: ASCII symbols
 regs_names    db 'axbxcxdxsidibpspesssdscs'
-
 hex_table     db '0123456789ABCDEF'
 reg_val       dw 0
                 
