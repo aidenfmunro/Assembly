@@ -177,14 +177,17 @@ draw_middle proc
 
 draw_regs   proc
 
-            ;push cs ds ss es sp bp di si dx cx bx ax
+            push cs ds ss es sp bp di si dx cx bx ax
 
             mov si, offset regs_names
 
             mov ah, FRAME_COLOR
 
-            mov di, (2 * WINDOW_WIDTH + 2) * 2
+            mov di, (WINDOW_WIDTH + 2) * 2
             
+
+            mov cx, 12
+next:
             lodsb
             stosw
 
@@ -199,17 +202,9 @@ draw_regs   proc
 
             mov al, ' '
             stosw
-            
-            call draw_reg
 
-            ret
-
-            endp
-
-draw_reg    proc
-
-            push ax
-            pop reg_val
+            pop bx
+            mov reg_val, bx
 
             mov bx, reg_val
             shr bx, 12
@@ -236,7 +231,11 @@ draw_reg    proc
             shr bx, 0
             mov bl, cs:[offset hex_table + bx]
             mov al, bl
-            stosw 
+            stosw
+
+            add di, WINDOW_WIDTH * 2 - 18
+
+            loop next 
 
             ret
 
@@ -303,7 +302,7 @@ pop_up        db 0
 
 ;-----Default configuration string----------------------------------------------
 control_str   db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch ; TODO: ASCII symbols
-regs_names    db 'axcxbxdxsidibpspesssdscs'
+regs_names    db 'axbxcxdxsidibpspesssdscs'
 
 hex_table     db '0123456789ABCDEF'
 reg_val       dw 0
