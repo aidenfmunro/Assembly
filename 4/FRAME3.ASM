@@ -25,7 +25,7 @@ ARGS_ADDR     equ 80h
 
 EXIT_CODE     equ 4c00h
 
-ENTRY_SYM     equ 02h
+ENTRY_SYM     equ 02h               ; '1'
 
 FRAME_HEIGHT  equ 20d
 
@@ -175,6 +175,73 @@ draw_middle proc
             endp
 ;-----End of draw_middle procedure----------------------------------------------
 
+draw_regs   proc
+
+            ;push cs ds ss es sp bp di si dx cx bx ax
+
+            mov si, offset regs_names
+
+            mov ah, FRAME_COLOR
+
+            mov di, (2 * WINDOW_WIDTH + 2) * 2
+            
+            lodsb
+            stosw
+
+            lodsb
+            stosw
+
+            mov al, ' '
+            stosw
+
+            mov al, '='
+            stosw
+
+            mov al, ' '
+            stosw
+            
+            call draw_reg
+
+            ret
+
+            endp
+
+draw_reg    proc
+
+            push ax
+            pop reg_val
+
+            mov bx, reg_val
+            shr bx, 12
+            mov bl, cs:[offset hex_table + bx]
+            mov al, bl
+            stosw
+
+            mov bx, reg_val
+            and bx, 00f00h
+            shr bx, 8
+            mov bl, cs:[offset hex_table + bx]
+            mov al, bl
+            stosw
+
+            mov bx, reg_val
+            and bx, 000f0h
+            shr bx, 4
+            mov bl, cs:[offset hex_table + bx]
+            mov al, bl
+            stosw
+
+            mov bx, reg_val
+            and bx, 0000fh
+            shr bx, 0
+            mov bl, cs:[offset hex_table + bx]
+            mov al, bl
+            stosw 
+
+            ret
+
+            endp
+
 main:       mov ax, 3509h               
 			int 21h		                ; get interrupt vector address -> es:bx
 
@@ -208,15 +275,17 @@ my_int09	proc
 
             jne @@end
             
-            cmp cs:pop_up, 0
+            ;cmp cs:pop_up, 0
             
-            jne @@end
+            ;jne @@end
             
-            mov cs:pop_up, 1
+            ;mov cs:pop_up, 1
 
 			push bx cx dx es si di ss
 
             call draw_frame
+
+            call draw_regs
 
             pop ss di si es dx cx bx
 
@@ -233,7 +302,12 @@ pop_up        db 0
 ;-----End of variables----------------------------------------------------------
 
 ;-----Default configuration string----------------------------------------------
-control_str   db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch ; TODO: ASCII symbols         
+control_str   db 0c9h, 0cdh, 0bbh, 0bah, 20h, 0bah, 0c8h, 0cdh, 0bch ; TODO: ASCII symbols
+regs_names    db 'axcxbxdxsidibpspesssdscs'
+
+hex_table     db '0123456789ABCDEF'
+reg_val       dw 0
+                
 ;-----End of default configuration string
 
 end_of_prog:
