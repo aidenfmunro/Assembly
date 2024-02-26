@@ -27,7 +27,7 @@ EXIT_CODE     equ 4c00h
 
 ENTRY_SYM     equ 02h               ; '1'
 
-FRAME_HEIGHT  equ 20d
+FRAME_HEIGHT  equ 14d
 
 FRAME_WIDTH   equ 13d
 
@@ -177,14 +177,13 @@ draw_middle proc
 
 draw_regs   proc
 
-            push cs ds ss es sp bp di si dx cx bx ax
-
             mov si, offset regs_names
 
             mov ah, FRAME_COLOR
 
             mov di, (WINDOW_WIDTH + 2) * 2
             
+            mov bp, sp
 
             mov cx, 12
 next:
@@ -197,16 +196,15 @@ next:
             mov al, ' '
             stosw
 
-            mov al, '='
+            mov al, '='             
             stosw
 
             mov al, ' '
             stosw
 
-            pop bx
+            mov bx, [bp + 2]
             mov reg_val, bx
 
-            mov bx, reg_val
             shr bx, 12
             mov bl, cs:[offset hex_table + bx]
             mov al, bl
@@ -235,9 +233,13 @@ next:
 
             add di, WINDOW_WIDTH * 2 - 18
 
-            loop next 
+            add bp, 2
 
-            ret
+            loop next
+
+                         ; cs not able to be written 
+
+            ret 
 
             endp
 
@@ -280,13 +282,15 @@ my_int09	proc
             
             ;mov cs:pop_up, 1
 
-			push bx cx dx es si di ss
+			push cs ds ss es sp bp di si dx cx bx ax
 
             call draw_frame
 
             call draw_regs
 
-            pop ss di si es dx cx bx
+            pop ax bx cx dx si di bp sp es ss ds 
+
+            add sp, 2 ; <------------------------------------------ !!!
 
 @@end:      pop ax
 
