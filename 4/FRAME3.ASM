@@ -179,7 +179,7 @@ draw_middle proc
 ; 
 ;     brief: Draws the middle section of the frame.
 ;    
-;     entry: si, di, ax, cx, bx
+;     entry: stack frame: ds ss es sp bp di si dx cx bx ax
 ;
 ;     destroys: si, di, ax, cx, bx
 ;
@@ -196,7 +196,18 @@ draw_regs   proc
             
             mov bp, sp
 
-            mov cx, 12
+            mov cx, 11                      ; 11 registers, except cs
+
+            call next
+
+            add bp, 2                       ; add 4
+            mov cx, 1                       
+
+            call next                       ; print cs
+
+            ret
+
+            endp
 next:
             lodsb
             stosw
@@ -224,7 +235,7 @@ next:
             mov bx, reg_val
             and bx, 00f00h
             shr bx, 8
-            mov bl, cs:[offset hex_table + bx]
+            mov bl, cs:[offset hex_table + bx]      ; cringe
             mov al, bl
             stosw
 
@@ -300,6 +311,10 @@ my_int09	proc
 
             jne @@end
 
+            cmp cs:pop_up, 0
+
+            jne @@end
+
             mov cs:pop_up, 1
 
 			in al, 61h                  ; symbol
@@ -309,14 +324,9 @@ my_int09	proc
             and al, not 80h
             out 61h, al
 
-;-----EOI------------------------------------------------------------------------
-
-            mov al, 20h			        ; say to PPI that our interrupt is over
-		    out 20h, al		            ; so other interrupts can play
-
-;-----End of processing the interrupt-------------------------------------------
-            
 ;-----
+            pop ax
+
 			push cs ds ss es sp bp di si dx cx bx ax
 
             call draw_frame
@@ -325,9 +335,14 @@ my_int09	proc
 
             pop ax bx cx dx si di bp sp es ss ds 
 
-            add sp, 2 ; <-------------------------------------------------------
+            add sp, 2
 
-            pop ax
+;-----EOI-----------------------------------------------------------------------
+
+            mov al, 20h			        ; say to PPI that our interrupt is over
+		    out 20h, al		            ; so other interrupts can play
+
+;-----End of processing the interrupt-------------------------------------------
 
             iret        
 
@@ -341,31 +356,15 @@ Old09Seg	dw 0
 
 my_int08    proc
 
-            push ax
-
-            cmp cs:pop_up, 0
-            je @@end
-
-            mov al, 20h			; say to PPI that our interrupt is over
-		    out 20h, al
-
-			push cs ds ss es sp bp di si dx cx bx ax
+			push ds ss es sp bp di si dx cx bx ax
 
             call draw_frame
 
             call draw_regs
 
-            pop ax bx cx dx si di bp sp es ss ds 
-
-            add sp, 2 ; <-------------------------------------------------------
-
-            pop ax
-
-            iret        
-
-@@end:      pop ax
-
-            db 0eah                     ; far jmp ; TODO: why can't jmp otherwise?
+            pop ax bx cx dx si di bp sp es ss ds
+      
+@@end:      db 0eah                     ; far jmp ; TODO: why can't jmp otherwise?
 Old08Offs	dw 0
 Old08Seg	dw 0
 
